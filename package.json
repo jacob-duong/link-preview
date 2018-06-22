@@ -1,0 +1,61 @@
+{
+  "name": "jacob-duong/link-preview",
+  "version": "0.4.3",
+  "main": "src/main.js",
+  "private": false,
+  "repository": "https://github.com/jacob-duong/link-preview.git",
+  "license": "MIT",
+  "keywords": [
+    "link",
+    "preview",
+    "nunki",
+    "node.js"
+  ],
+  "devDependencies": {
+    "codecov": "2.3.0",
+    "commitizen": "^2.9.6",
+    "cz-conventional-changelog": "^2.0.0",
+    "ghooks": "^2.0.0",
+    "jest": "21.1.0",
+    "semantic-release": "^7.0.0",
+    "sinon": "^4.1.3",
+    "surge": "^0.19.0"
+  },
+  "scripts": {
+    "semantic-release": "semantic-release pre && npm publish && semantic-release post",
+    "commit": "git-cz",
+    "test:ci": "CI=true jest --coverage",
+    "test": "jest --coverage",
+    "test-watch": "jest --watch",
+    "report-coverage": "cat ./coverage/lcov.info | codecov"
+  },
+  "config": {
+    "commitizen": {
+      "path": "cz-conventional-changelog"
+    },
+    "ghooks": {
+      "pre-commit": "npm run test:ci"
+    }
+  },
+  "jest": {
+    "collectCoverageFrom": [
+      "src/**/*.{js,jsx}"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 80,
+        "functions": 80,
+        "lines": 80,
+        "statements": 80
+      }
+    },
+    "testMatch": [
+      "<rootDir>/src/**/__tests__/**/*.test.js?(x)"
+    ],
+    "testEnvironment": "node"
+  },
+  "dependencies": {
+    "cheerio": "1.0.0-rc.2",
+    "request": "2.82.0"
+  }
+}
