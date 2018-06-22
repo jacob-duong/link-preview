@@ -6,19 +6,23 @@ const getByProp = ($, property) =>
     .first()
     .attr("content") || null;
 
-function collectMeta($, url, deepVideo) {
-  console.log('collectMeta >>>>> ', body);
+const getByTag = ($, property) =>
+  $('title')
+    .first()
+    .html() || null;
 
+function collectMeta($, url, deepVideo) {
   const ogUrl = getByProp($, "og:url");
   const ogVideoUrl = getByProp($, "og:video:secure_url") || getByProp($, "og:video:url");
+
   const res = {
     url,
     image: getByProp($, "og:image"),
     imageWidth: getByProp($, "og:image:width"),
     imageHeight: getByProp($, "og:image:height"),
     imageType: getByProp($, "og:image:type"),
-    title: getByProp($, "og:title"),
-    description: getByProp($, "og:description"),
+    title: getByProp($, "og:title") || getByTag($, 'title'),
+    description: getByProp($, "og:description") || getByProp($, "description") || getByProp($, "Description"),
     siteName: getByProp($, "og:site_name"),
     ogVideoUrl: (ogVideoUrl || "").indexOf("youtube.com") >= 0 ? null : ogVideoUrl,
     ogUrl,
