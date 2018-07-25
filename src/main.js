@@ -22,7 +22,6 @@ function twitchSEO(meta, twitchInfo, twitchClientID, resolve) {
     const isChannel = twitchInfo.mediaType === 'stream';
     const isClip = twitchInfo.mediaType === 'clip';
     const isVideo = twitchInfo.mediaType === 'video';
-
     api.clientID = twitchClientID;
     if (isChannel) {
         api.users.usersByName({users: twitchInfo.channel}, (err, res) => {
@@ -40,6 +39,16 @@ function twitchSEO(meta, twitchInfo, twitchClientID, resolve) {
                 meta.title = res.title;
                 meta.description = res.title || meta.title;
                 meta.image = res.preview.large;
+            }
+            resolve(meta);
+        });
+    } else if (isClip) {
+        api.clips.getClip( {slug: twitchInfo.id}, (err, res) => {
+            if (!err) {
+                meta.title = res.title;
+                meta.description = res.title || meta.title;
+                meta.image = res.thumbnails.medium;
+                meta.ogVideoUrl = res.embed_url;
             }
             resolve(meta);
         });
