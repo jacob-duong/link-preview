@@ -1,47 +1,64 @@
-const cheerio = require("cheerio");
-const request = require("request");
+const cheerio = require('cheerio');
+const request = require('request');
 const api = require('twitch-api-v5');
+const urlParser = require('js-video-url-parser');
 
-const MATCH_VIDEO_URL = /(?:www\.|go\.)?twitch\.tv\/videos\/(\d+)($|\?)/
-const MATCH_CHANNEL_URL = /(?:www\.|go\.)?twitch\.tv\/([a-z0-9_]+)($|\?)/
+function twitchParser(url) {
+    const info = urlParser.parse(url);
+    if(info && ['twitch', 'youtube'].indexOf(info.provider) > -1 ) {
+        info.embed = urlParser.create({
+            videoInfo: info,
+            format: 'embed',
+            params: {
+                allowfullscreen: 1,
+                autoplay: 1,
+            }
+        })
+    }
+    return info || null;
+};
 
-function isTwitch(url) {
-    return MATCH_VIDEO_URL.test(url) || MATCH_CHANNEL_URL.test(url)
+function twitchSEO(meta, twitchInfo, twitchClientID, resolve) {
+    const isChannel = twitchInfo.mediaType === 'stream';
+    const isClip = twitchInfo.mediaType === 'clip';
+    const isVideo = twitchInfo.mediaType === 'video';
+
+    api.clientID = twitchClientID;
+    if (isChannel) {
+        api.users.usersByName({users: twitchInfo.channel}, (err, res) => {
+            if (!err && res.users && res.users.length) {
+                const user = res.users[0];
+                meta.title = user.display_name;
+                meta.description = user.bio || meta.title;
+                meta.image = user.logo;
+            }
+            resolve(meta);
+        })
+    } else if (isVideo) {
+        api.videos.getVideo({videoID: twitchInfo.id}, (err, res) => {
+            if (!err) {
+                meta.title = res.title;
+                meta.description = res.title || meta.title;
+                meta.image = res.preview.large;
+            }
+            resolve(meta);
+        });
+    } else {
+        resolve(meta);
+    }
 };
 
 function collectTwitchMeta(meta, twitchClientID) {
     return new Promise((resolve, reject) => {
-        if (isTwitch(meta.url) && twitchClientID) {
-            const isChannel = MATCH_CHANNEL_URL.test(meta.url);
-            const id = isChannel ? meta.url.match(MATCH_CHANNEL_URL)[1] : meta.url.match(MATCH_VIDEO_URL)[1];
-
-            meta.ogVideoUrl = `https://player.twitch.tv/?allowfullscreen&autoplay&${isChannel ? 'channel' : 'video'}=${id}`;
-            api.clientID = twitchClientID;
-
-            isChannel ?
-                api.users.usersByName({users: id}, (err, res) => {
-                    if (!err && res.users && res.users.length) {
-                        const user = res.users[0];
-                        meta.title = user.display_name;
-                        meta.description = user.bio || meta.title;
-                        meta.image = user.logo;
-                    }
-                    resolve(meta);
-                })
-                :
-                api.videos.getVideo({videoID: id}, (err, res) => {
-                    if (!err) {
-                        meta.title = res.title;
-                        meta.description = res.title || meta.title;
-                        meta.image = res.preview.large;
-                    }
-                    resolve(meta);
-                });
-
-
-        } else {
-            resolve(meta);
+        const twitchInfo = twitchParser(meta.url);
+        if (twitchInfo && twitchClientID) {
+            meta.ogVideoUrl = twitchInfo.embed;
+            if (twitchInfo.provider === 'twitch'){
+                twitchSEO(meta, twitchInfo, twitchClientID, resolve)
+                return;
+            }
         }
+        resolve(meta);
     });
 };
 
@@ -68,18 +85,10 @@ function collectMeta($, url, twitchClientID) {
         title: getByProp($, "og:title") || getByTag($, 'title'),
         description: getByProp($, "og:description") || getByProp($, "description") || getByProp($, "Description"),
         siteName: getByProp($, "og:site_name"),
-        ogVideoUrl: (ogVideoUrl || "").indexOf("youtube.com") >= 0 ? null : ogVideoUrl,
+        ogVideoUrl,
         ogUrl,
-        youtube:
-            (ogVideoUrl || "").indexOf("youtube.com") >= 0
-                ? ogVideoUrl
-                : !ogUrl ? null : ogUrl.indexOf("youtube.com") >= 0 ? `https://youtube.com/embed/${getValue(ogUrl, "v")}` : null
     };
-
-    if (twitchClientID && !res.ogVideoUrl && !res.youtube) {
-        return collectTwitchMeta(res, twitchClientID);
-    }
-    return Promise.resolve(res);
+    return collectTwitchMeta(res, twitchClientID);
 }
 
 const getValue = (url, name) => {
