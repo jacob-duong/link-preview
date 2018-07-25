@@ -19,41 +19,42 @@ function twitchParser(url) {
 };
 
 function twitchSEO(meta, twitchInfo, twitchClientID, resolve) {
-    const isChannel = twitchInfo.mediaType === 'stream';
-    const isClip = twitchInfo.mediaType === 'clip';
-    const isVideo = twitchInfo.mediaType === 'video';
     api.clientID = twitchClientID;
-    if (isChannel) {
-        api.users.usersByName({users: twitchInfo.channel}, (err, res) => {
-            if (!err && res.users && res.users.length) {
-                const user = res.users[0];
-                meta.title = user.display_name;
-                meta.description = user.bio || meta.title;
-                meta.image = user.logo;
-            }
+    switch(twitchInfo.mediaType) {
+        case 'stream':
+            api.users.usersByName({users: twitchInfo.channel}, (err, res) => {
+                if (!err && res.users && res.users.length) {
+                    const user = res.users[0];
+                    meta.title = user.display_name;
+                    meta.description = user.bio || meta.title;
+                    meta.image = user.logo;
+                }
+                resolve(meta);
+            })
+            break;
+        case 'clip':
+            api.clips.getClip( {slug: twitchInfo.id}, (err, res) => {
+                if (!err) {
+                    meta.title = res.title;
+                    meta.description = res.title || meta.title;
+                    meta.image = res.thumbnails.medium;
+                    meta.ogVideoUrl = res.embed_url;
+                }
+                resolve(meta);
+            });
+            break;
+        case 'video':
+            api.videos.getVideo({videoID: twitchInfo.id}, (err, res) => {
+                if (!err) {
+                    meta.title = res.title;
+                    meta.description = res.title || meta.title;
+                    meta.image = res.preview.large;
+                }
+                resolve(meta);
+            });
+            break;
+        default:
             resolve(meta);
-        })
-    } else if (isVideo) {
-        api.videos.getVideo({videoID: twitchInfo.id}, (err, res) => {
-            if (!err) {
-                meta.title = res.title;
-                meta.description = res.title || meta.title;
-                meta.image = res.preview.large;
-            }
-            resolve(meta);
-        });
-    } else if (isClip) {
-        api.clips.getClip( {slug: twitchInfo.id}, (err, res) => {
-            if (!err) {
-                meta.title = res.title;
-                meta.description = res.title || meta.title;
-                meta.image = res.thumbnails.medium;
-                meta.ogVideoUrl = res.embed_url;
-            }
-            resolve(meta);
-        });
-    } else {
-        resolve(meta);
     }
 };
 
