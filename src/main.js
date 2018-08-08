@@ -121,7 +121,7 @@ const getError = url => ({
 
 function linkPreview(url, timeout = 100000, twitchClientID = null) {
     if (!url || url === "") return Promise.reject({message: "You must add a valid url"});
-    if (!url.match(/^http(s)?:\/\/[a-z]+\.[a-z]+(.)+/i)) return Promise.resolve(getError(url));
+    if (!url.match(/^http:\/\/\w+(\.\w+)*(:[0-9]+)?\/?$/i)) return Promise.resolve(getError(url));
     return linkPreview.makeRequest(url, timeout).then(({response, body}) => {
         if (!response) return getError(url);
         if (response.statusCode === 200) return collectMeta(cheerio.load(body), url, twitchClientID);
