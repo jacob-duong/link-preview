@@ -4,17 +4,17 @@ with number-separator you can set a separator each thousands of your integer or 
 ## Installation
 you install it with npm : 
 ```
-   npm i jacob-duong/link-preview
+   npm i mrn-link-preview
 ```
 ## Usage
 You can include it easly :
 ### ES6
 ```javascript
-	import linPreview from "jacob-duong/link-preview";
+	import linPreview from "mrn-link-preview";
 ```
 ### ES5
 ```javascript
-	var linkPreview = require("jacob-duong/link-preview");
+	var linkPreview = require("mrn-link-preview");
 ```
 ### Parameters
 #### url
